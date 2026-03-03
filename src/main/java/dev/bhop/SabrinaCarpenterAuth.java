@@ -24,7 +24,7 @@ import java.io.File;
 public class SabrinaCarpenterAuth {
 
     public static final String MODID = "sabrinacarpenterauth";
-    public static final String VERSION = "1.0";
+    public static final String VERSION = "1.2";
     public static Session originalSession;
     public static AccountDatabase database;
     public static String sessionValidity = "\u00a72\u2714 Valid";
