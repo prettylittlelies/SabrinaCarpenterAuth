@@ -12,7 +12,7 @@ public class GlassButton extends GuiButton {
     private final int hoverBorderColor;
 
     public GlassButton(int id, int x, int y, int w, int h, String text) {
-        this(id, x, y, w, h, text, 0x60202040, 0x80303060, 0x40151525, 0x40FFFFFF, 0x804488FF);
+        this(id, x, y, w, h, text, 0x60281420, 0x80482838, 0x40151015, 0x40D4639A, 0x90FF69B4);
     }
 
     public GlassButton(int id, int x, int y, int w, int h, String text,

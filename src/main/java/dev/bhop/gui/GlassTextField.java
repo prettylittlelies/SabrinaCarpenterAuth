@@ -5,9 +5,9 @@ import net.minecraft.client.gui.GuiTextField;
 
 public class GlassTextField extends GuiTextField {
 
-    private static final int BG_COLOR = 0x80101020;
-    private static final int BORDER_NORMAL = 0x40FFFFFF;
-    private static final int BORDER_FOCUSED = 0x804488FF;
+    private static final int BG_COLOR = 0x80120812;
+    private static final int BORDER_NORMAL = 0x40D4639A;
+    private static final int BORDER_FOCUSED = 0x90FF69B4;
 
     public GlassTextField(int id, FontRenderer font, int x, int y, int w, int h) {
         super(id, font, x, y, w, h);

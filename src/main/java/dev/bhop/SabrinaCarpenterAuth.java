@@ -71,8 +71,8 @@ public class SabrinaCarpenterAuth {
     public void onDrawScreen(GuiScreenEvent.DrawScreenEvent.Post e) {
         if (!(e.gui instanceof GuiMultiplayer)) return;
         Minecraft mc = mc();
-        String info = "\u00a7fUser: " + mc.getSession().getUsername() + "  \u00a7f|  " + sessionValidity;
-        mc.fontRendererObj.drawString(info, 5, 10, Color.RED.getRGB());
+        String info = "\u00a7dUser: " + mc.getSession().getUsername() + "  \u00a7f|  " + sessionValidity;
+        mc.fontRendererObj.drawStringWithShadow(info, 5, 10, 0xFFE8A0BF);
     }
 
     @SubscribeEvent

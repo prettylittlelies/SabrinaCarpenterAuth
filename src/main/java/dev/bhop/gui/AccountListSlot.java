@@ -60,7 +60,7 @@ public class AccountListSlot extends GuiSlot {
         Minecraft mc = Minecraft.getMinecraft();
 
         if (parent.getSelectedIndex() == index) {
-            RenderUtils.drawRoundedRect(x - 2, y - 1, getListWidth() + 4, slotHeight + 2, 3.0, 0x60304060);
+            RenderUtils.drawRoundedRect(x - 2, y - 1, getListWidth() + 4, slotHeight + 2, 3.0, 0x50402035);
         }
 
         String headUrl = TextureCache.headUrl(account.getUuid());
@@ -71,14 +71,14 @@ public class AccountListSlot extends GuiSlot {
             Gui.drawModalRectWithCustomSizedTexture(x, y + 1, 0, 0, 20, 20, 20, 20);
         } else {
             TextureCache.loadAsync(headUrl);
-            RenderUtils.drawRoundedRect(x, y + 1, 20, 20, 3.0, 0xFF2A2A2A);
+            RenderUtils.drawRoundedRect(x, y + 1, 20, 20, 3.0, 0xFF1A0A14);
         }
 
         mc.fontRendererObj.drawStringWithShadow(account.getUsername(), x + 25, y + 3, 0xFFFFFF);
         mc.fontRendererObj.drawStringWithShadow("\u00a77" + account.getSkinVariant().name(), x + 25, y + 14, 0x888888);
 
         if (!account.getCapes().isEmpty()) {
-            RenderUtils.drawCircle(x + getListWidth() - 6, y + slotHeight / 2 + 1, 3, 0xFF4488FF);
+            RenderUtils.drawCircle(x + getListWidth() - 6, y + slotHeight / 2 + 1, 3, 0xFFE8A0BF);
         }
     }
 

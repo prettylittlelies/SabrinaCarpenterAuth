@@ -17,7 +17,7 @@ public class SessionGUI extends GuiScreen {
     private final GuiScreen parent;
     private GlassTextField tokenField;
     private ScaledResolution sr;
-    private String status = "Enter Session Token";
+    private String status = "\u00a7dEnter Session Token";
 
     public SessionGUI(GuiScreen parent) {
         this.parent = parent;
@@ -52,9 +52,10 @@ public class SessionGUI extends GuiScreen {
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         drawDefaultBackground();
+        RenderUtils.drawGradientRect(0, 0, sr.getScaledWidth(), sr.getScaledHeight(), 0x40180818, 0x60100610);
         int cx = sr.getScaledWidth() / 2;
         int cy = sr.getScaledHeight() / 2;
-        RenderUtils.drawGlassPanel(cx - 110, cy - 45, 220, 125, 8.0, 0x80101020, 0x40FFFFFF);
+        RenderUtils.drawGlassPanel(cx - 110, cy - 45, 220, 125, 8.0, 0x90120812, 0x40D4639A);
         mc.fontRendererObj.drawStringWithShadow(status, cx - mc.fontRendererObj.getStringWidth(status) / 2, cy - 30, 0xFFFFFFFF);
         tokenField.drawTextBox();
         super.drawScreen(mouseX, mouseY, partialTicks);
@@ -97,10 +98,32 @@ public class SessionGUI extends GuiScreen {
         }
     }
 
+    private static boolean isCtrl() {
+        return Keyboard.isKeyDown(Keyboard.KEY_LCONTROL) || Keyboard.isKeyDown(Keyboard.KEY_RCONTROL)
+                || Keyboard.isKeyDown(Keyboard.KEY_LMETA) || Keyboard.isKeyDown(Keyboard.KEY_RMETA);
+    }
+
     @Override
     protected void keyTyped(char typedChar, int keyCode) throws IOException {
+        if (keyCode == Keyboard.KEY_ESCAPE) {
+            mc.displayGuiScreen(parent);
+            return;
+        }
+        if (tokenField.isFocused() && isCtrl()) {
+            if (keyCode == Keyboard.KEY_V) {
+                tokenField.writeText(getClipboardString());
+                return;
+            }
+            if (keyCode == Keyboard.KEY_A) {
+                tokenField.setCursorPositionEnd();
+                tokenField.setSelectionPos(0);
+                return;
+            }
+            if (keyCode == Keyboard.KEY_C) {
+                setClipboardString(tokenField.getSelectedText());
+                return;
+            }
+        }
         tokenField.textboxKeyTyped(typedChar, keyCode);
-        if (keyCode == Keyboard.KEY_ESCAPE) mc.displayGuiScreen(parent);
-        else super.keyTyped(typedChar, keyCode);
     }
 }

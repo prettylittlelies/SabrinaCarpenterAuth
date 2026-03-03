@@ -29,7 +29,7 @@ public final class RenderUtils {
         double cy = y + h / 2.0;
         wr.pos(cx, cy, 0).endVertex();
 
-        int segments = 8;
+        int segments = 10;
         double[][] corners = {
             {x + w - radius, y + radius, -Math.PI / 2, 0},
             {x + w - radius, y + h - radius, 0, Math.PI / 2},
@@ -63,12 +63,13 @@ public final class RenderUtils {
         GlStateManager.color(r, g, b, a);
         GL11.glLineWidth(lineWidth);
         GL11.glEnable(GL11.GL_LINE_SMOOTH);
+        GL11.glHint(GL11.GL_LINE_SMOOTH_HINT, GL11.GL_NICEST);
 
         Tessellator tess = Tessellator.getInstance();
         WorldRenderer wr = tess.getWorldRenderer();
         wr.begin(GL11.GL_LINE_LOOP, DefaultVertexFormats.POSITION);
 
-        int segments = 8;
+        int segments = 10;
         double[][] corners = {
             {x + w - radius, y + radius, -Math.PI / 2, 0},
             {x + w - radius, y + h - radius, 0, Math.PI / 2},
@@ -113,35 +114,6 @@ public final class RenderUtils {
         wr.pos(x, y + h, 0).color(r2, g2, b2, a2).endVertex();
         wr.pos(x + w, y + h, 0).color(r2, g2, b2, a2).endVertex();
         wr.pos(x + w, y, 0).color(r1, g1, b1, a1).endVertex();
-        tess.draw();
-
-        GlStateManager.shadeModel(GL11.GL_FLAT);
-        GlStateManager.enableTexture2D();
-        GlStateManager.disableBlend();
-    }
-
-    public static void drawHGradientRect(double x, double y, double w, double h, int colorLeft, int colorRight) {
-        float a1 = (colorLeft >> 24 & 0xFF) / 255.0F;
-        float r1 = (colorLeft >> 16 & 0xFF) / 255.0F;
-        float g1 = (colorLeft >> 8 & 0xFF) / 255.0F;
-        float b1 = (colorLeft & 0xFF) / 255.0F;
-        float a2 = (colorRight >> 24 & 0xFF) / 255.0F;
-        float r2 = (colorRight >> 16 & 0xFF) / 255.0F;
-        float g2 = (colorRight >> 8 & 0xFF) / 255.0F;
-        float b2 = (colorRight & 0xFF) / 255.0F;
-
-        GlStateManager.enableBlend();
-        GlStateManager.disableTexture2D();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-        GlStateManager.shadeModel(GL11.GL_SMOOTH);
-
-        Tessellator tess = Tessellator.getInstance();
-        WorldRenderer wr = tess.getWorldRenderer();
-        wr.begin(7, DefaultVertexFormats.POSITION_COLOR);
-        wr.pos(x, y, 0).color(r1, g1, b1, a1).endVertex();
-        wr.pos(x, y + h, 0).color(r1, g1, b1, a1).endVertex();
-        wr.pos(x + w, y + h, 0).color(r2, g2, b2, a2).endVertex();
-        wr.pos(x + w, y, 0).color(r2, g2, b2, a2).endVertex();
         tess.draw();
 
         GlStateManager.shadeModel(GL11.GL_FLAT);

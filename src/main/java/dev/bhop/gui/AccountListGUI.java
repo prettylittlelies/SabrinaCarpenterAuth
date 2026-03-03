@@ -4,7 +4,6 @@ import dev.bhop.SabrinaCarpenterAuth;
 import dev.bhop.data.Account;
 import dev.bhop.data.AccountExporter;
 import dev.bhop.data.CapeInfo;
-import dev.bhop.data.SkinVariant;
 import dev.bhop.util.APIUtils;
 import dev.bhop.util.SessionChanger;
 import dev.bhop.util.TextureCache;
@@ -39,8 +38,6 @@ public class AccountListGUI extends GuiScreen {
     private static final int BTN_SORT = 5009;
     private static final int BTN_RESTORE = 5010;
     private static final int BTN_REFRESH = 5011;
-    private static final int BTN_SKIN_APPLY = 5012;
-    private static final int BTN_SKIN_VARIANT = 5013;
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
     private final GuiScreen parent;
@@ -61,12 +58,7 @@ public class AccountListGUI extends GuiScreen {
     private GlassButton folderBtn;
     private GlassButton copyBtn;
     private GlassButton refreshBtn;
-    private GlassButton skinApplyBtn;
-    private GlassButton skinVariantBtn;
-    private GlassTextField skinUrlField;
-    private SkinVariant selectedVariant = SkinVariant.CLASSIC;
     private boolean refreshing;
-    private boolean changingSkin;
 
     public AccountListGUI(GuiScreen parent) {
         this.parent = parent;
@@ -84,7 +76,6 @@ public class AccountListGUI extends GuiScreen {
         buttonList.add(new GlassButton(BTN_RESTORE, width - 88, 4, 80, 18, "Restore"));
 
         accountSlot = new AccountListSlot(this, mc, width, height, 28, height - 32);
-        refreshAccounts();
 
         int rpx = width / 2 + 8;
         int btnY = height - 28;
@@ -96,30 +87,21 @@ public class AccountListGUI extends GuiScreen {
         copyBtn = new GlassButton(BTN_COPY, rpx + (bw + gap) * 2, btnY, bw, 18, "Copy");
         deleteBtn = GlassButton.danger(BTN_DELETE, rpx + (bw + gap) * 3, btnY, bw, 18, "Delete");
         folderBtn = new GlassButton(BTN_FOLDER, rpx + (bw + gap) * 4, btnY, bw, 18, "Folder");
+        refreshBtn = new GlassButton(BTN_REFRESH, width - 78, height - 95, 70, 16, "Refresh");
 
         buttonList.add(loginBtn);
         buttonList.add(exportBtn);
         buttonList.add(copyBtn);
         buttonList.add(deleteBtn);
         buttonList.add(folderBtn);
+        buttonList.add(refreshBtn);
 
         buttonList.add(new GlassButton(BTN_ADD, 5, btnY, 70, 18, "Add"));
         buttonList.add(new GlassButton(BTN_EXPORT_ALL, 80, btnY, 70, 18, "Export All"));
         buttonList.add(new GlassButton(BTN_BACK, 155, btnY, 55, 18, "Back"));
 
-        refreshBtn = new GlassButton(BTN_REFRESH, width - 78, height - 95, 70, 16, "Refresh");
-        buttonList.add(refreshBtn);
-
-        int skinY = height - 70;
-        skinUrlField = new GlassTextField(1, mc.fontRendererObj, width / 2 + 10, skinY, width / 2 - 130, 16);
-        skinUrlField.setMaxStringLength(512);
-
-        skinVariantBtn = new GlassButton(BTN_SKIN_VARIANT, width - 112, skinY - 1, 46, 18, selectedVariant.name());
-        skinApplyBtn = new GlassButton(BTN_SKIN_APPLY, width - 62, skinY - 1, 52, 18, "Apply");
-        buttonList.add(skinVariantBtn);
-        buttonList.add(skinApplyBtn);
-
         updateDetailButtons();
+        refreshAccounts();
     }
 
     @Override
@@ -130,7 +112,6 @@ public class AccountListGUI extends GuiScreen {
     @Override
     public void updateScreen() {
         searchField.updateCursorCounter();
-        skinUrlField.updateCursorCounter();
     }
 
     private void refreshAccounts() {
@@ -167,11 +148,7 @@ public class AccountListGUI extends GuiScreen {
         selectedIndex = index;
         updateDetailButtons();
         Account account = getSelectedAccount();
-        if (account != null) {
-            preloadTextures(account);
-            selectedVariant = account.getSkinVariant();
-            skinVariantBtn.displayString = selectedVariant.name();
-        }
+        if (account != null) preloadTextures(account);
     }
 
     public void onAccountDoubleClicked(int index) {
@@ -195,8 +172,6 @@ public class AccountListGUI extends GuiScreen {
         deleteBtn.visible = has;
         folderBtn.visible = has;
         refreshBtn.visible = has;
-        skinApplyBtn.visible = has;
-        skinVariantBtn.visible = has;
     }
 
     @Override
@@ -209,16 +184,17 @@ public class AccountListGUI extends GuiScreen {
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
         super.mouseClicked(mouseX, mouseY, mouseButton);
         searchField.mouseClicked(mouseX, mouseY, mouseButton);
-        if (getSelectedAccount() != null) {
-            skinUrlField.mouseClicked(mouseX, mouseY, mouseButton);
-        }
     }
 
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         drawDefaultBackground();
+        RenderUtils.drawGradientRect(0, 0, width, height, 0x40180818, 0x60100610);
 
-        RenderUtils.drawGlassPanel(2, 1, width - 4, 24, 6.0, 0x80101020, 0x30FFFFFF);
+        RenderUtils.drawGlassPanel(2, 1, width - 4, 24, 6.0, 0x90120812, 0x30D4639A);
+
+        String title = "\u00a7d\u00a7lSabrinaCarpenterAuth \u00a78- \u00a7dAccounts (" + allAccounts.size() + ")";
+        mc.fontRendererObj.drawStringWithShadow(title, width / 2 + 4, 9, 0xFFE8A0BF);
 
         accountSlot.drawScreen(mouseX, mouseY, partialTicks);
 
@@ -236,7 +212,7 @@ public class AccountListGUI extends GuiScreen {
 
         if (System.currentTimeMillis() < statusExpiry) {
             int sw = mc.fontRendererObj.getStringWidth(statusMessage) + 16;
-            RenderUtils.drawRoundedRect(width / 2 - sw / 2, height - 50, sw, 14, 4.0, 0xC0101020);
+            RenderUtils.drawRoundedRect(width / 2 - sw / 2, height - 50, sw, 14, 4.0, 0xC0120812);
             drawCenteredString(mc.fontRendererObj, statusMessage, width / 2, height - 48, 0xFFFFFF);
         }
 
@@ -249,7 +225,7 @@ public class AccountListGUI extends GuiScreen {
         int pw = width / 2 - 8;
         int ph = height - 64;
 
-        RenderUtils.drawGlassPanel(px, py, pw, ph, 6.0, 0x80101020, 0x30FFFFFF);
+        RenderUtils.drawGlassPanel(px, py, pw, ph, 6.0, 0x90120812, 0x30D4639A);
 
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
         GlStateManager.enableAlpha();
@@ -264,7 +240,7 @@ public class AccountListGUI extends GuiScreen {
             mc.getTextureManager().bindTexture(body);
             Gui.drawModalRectWithCustomSizedTexture(bodyX, bodyY, 0, 0, bodyW, bodyH, bodyW, bodyH);
         } else {
-            RenderUtils.drawRoundedRect(bodyX, bodyY, bodyW, bodyH, 4.0, 0xFF1A1A1A);
+            RenderUtils.drawRoundedRect(bodyX, bodyY, bodyW, bodyH, 4.0, 0xFF1A0A14);
             mc.fontRendererObj.drawString("\u00a78...", bodyX + 20, bodyY + 56, 0x888888);
             TextureCache.loadAsync(TextureCache.bodyUrl(account.getUuid()));
         }
@@ -284,7 +260,7 @@ public class AccountListGUI extends GuiScreen {
         int ty = bodyY;
         int lineH = 11;
 
-        mc.fontRendererObj.drawStringWithShadow("\u00a7f" + account.getUsername(), tx, ty, 0xFFFFFF);
+        mc.fontRendererObj.drawStringWithShadow("\u00a7d" + account.getUsername(), tx, ty, 0xFFE8A0BF);
         ty += lineH;
         mc.fontRendererObj.drawStringWithShadow("\u00a78" + account.getFormattedUuid(), tx, ty, 0x888888);
         ty += lineH + 4;
@@ -308,10 +284,6 @@ public class AccountListGUI extends GuiScreen {
         mc.fontRendererObj.drawStringWithShadow("\u00a78Added: " + DATE_FORMAT.format(new Date(account.getAddedAt())), tx, ty, 0x888888);
         ty += lineH;
         mc.fontRendererObj.drawStringWithShadow("\u00a78Last used: " + DATE_FORMAT.format(new Date(account.getLastUsedAt())), tx, ty, 0x888888);
-
-        int skinLabelY = height - 78;
-        mc.fontRendererObj.drawStringWithShadow("\u00a78Skin URL:", px + 10, skinLabelY, 0x888888);
-        skinUrlField.drawTextBox();
     }
 
     @Override
@@ -354,13 +326,6 @@ public class AccountListGUI extends GuiScreen {
             case BTN_REFRESH:
                 if (selected != null && !refreshing) refreshProfile(selected);
                 break;
-            case BTN_SKIN_VARIANT:
-                selectedVariant = selectedVariant == SkinVariant.CLASSIC ? SkinVariant.SLIM : SkinVariant.CLASSIC;
-                skinVariantBtn.displayString = selectedVariant.name();
-                break;
-            case BTN_SKIN_APPLY:
-                if (selected != null && !changingSkin) applySkin(selected);
-                break;
         }
     }
 
@@ -402,40 +367,6 @@ public class AccountListGUI extends GuiScreen {
                     refreshBtn.displayString = "Refresh";
                     refreshBtn.enabled = true;
                     refreshing = false;
-                });
-            }
-        }).start();
-    }
-
-    private void applySkin(Account account) {
-        String url = skinUrlField.getText().trim();
-        if (url.isEmpty()) {
-            setStatus("\u00a74Enter a skin URL");
-            return;
-        }
-        changingSkin = true;
-        skinApplyBtn.displayString = "...";
-        skinApplyBtn.enabled = false;
-        new Thread(() -> {
-            try {
-                int code = APIUtils.changeSkin(url, account.getAccessToken(), selectedVariant);
-                mc.addScheduledTask(() -> {
-                    if (code == 200) {
-                        setStatus("\u00a72Skin changed");
-                        refreshProfile(account);
-                    } else {
-                        setStatus("\u00a74Skin change failed (HTTP " + code + ")");
-                    }
-                    skinApplyBtn.displayString = "Apply";
-                    skinApplyBtn.enabled = true;
-                    changingSkin = false;
-                });
-            } catch (Exception e) {
-                mc.addScheduledTask(() -> {
-                    setStatus("\u00a74Skin change failed");
-                    skinApplyBtn.displayString = "Apply";
-                    skinApplyBtn.enabled = true;
-                    changingSkin = false;
                 });
             }
         }).start();
@@ -512,10 +443,6 @@ public class AccountListGUI extends GuiScreen {
         if (searchField.isFocused()) {
             searchField.textboxKeyTyped(typedChar, keyCode);
             applyFilter();
-            return;
-        }
-        if (skinUrlField.isFocused()) {
-            skinUrlField.textboxKeyTyped(typedChar, keyCode);
             return;
         }
         super.keyTyped(typedChar, keyCode);
