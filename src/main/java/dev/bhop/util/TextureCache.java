@@ -56,14 +56,14 @@ public final class TextureCache {
     }
 
     public static String headUrl(String uuid) {
-        return "https://crafatar.com/avatars/" + uuid + "?size=20&overlay";
+        return "https://mc-heads.net/avatar/" + uuid + "/20";
     }
 
     public static String bodyUrl(String uuid) {
-        return "https://crafatar.com/renders/body/" + uuid + "?scale=4&overlay";
+        return "https://mc-heads.net/body/" + uuid;
     }
 
     public static String capeUrl(String uuid) {
-        return "https://crafatar.com/capes/" + uuid;
+        return "https://crafthead.net/cape/" + uuid;
     }
 }

@@ -26,7 +26,6 @@ public class SabrinaCarpenterAuth {
     public static final Minecraft mc = Minecraft.getMinecraft();
     public static Session originalSession = mc.getSession();
     public static AccountDatabase database;
-    public static String onlineStatus = "\u00a74\u2573 Offline";
     public static String sessionValidity = "\u00a72\u2714 Valid";
 
     private static File modDirectory;
@@ -55,10 +54,8 @@ public class SabrinaCarpenterAuth {
         e.buttonList.add(new GuiButton(2200, e.gui.width - 180, 5, 80, 20, "Accounts"));
         new Thread(() -> {
             try {
-                String token = mc.getSession().getToken();
-                String username = mc.getSession().getUsername();
-                sessionValidity = APIUtils.validateSession(token) ? "\u00a72\u2714 Valid" : "\u00a74\u2573 Invalid";
-                onlineStatus = APIUtils.checkOnline(username) ? "\u00a72\u2714 Online" : "\u00a74\u2573 Offline";
+                sessionValidity = APIUtils.validateSession(mc.getSession().getToken())
+                        ? "\u00a72\u2714 Valid" : "\u00a74\u2573 Invalid";
             } catch (Exception ignored) {}
         }).start();
     }
@@ -66,7 +63,7 @@ public class SabrinaCarpenterAuth {
     @SubscribeEvent
     public void onDrawScreen(GuiScreenEvent.DrawScreenEvent.Post e) {
         if (!(e.gui instanceof GuiMultiplayer)) return;
-        String info = "\u00a7fUser: " + mc.getSession().getUsername() + "  \u00a7f|  " + onlineStatus + "  \u00a7f|  " + sessionValidity;
+        String info = "\u00a7fUser: " + mc.getSession().getUsername() + "  \u00a7f|  " + sessionValidity;
         mc.fontRendererObj.drawString(info, 5, 10, Color.RED.getRGB());
     }
 

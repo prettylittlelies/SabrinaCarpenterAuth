@@ -1,6 +1,7 @@
 # Build output
 build/
 out/
+.claude/
 
 # Gradle
 .gradle/

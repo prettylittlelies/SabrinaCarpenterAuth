@@ -27,7 +27,6 @@ public final class APIUtils {
 
     private static final String PROFILE_URL = "https://api.minecraftservices.com/minecraft/profile";
     private static final String SKIN_URL = "https://api.minecraftservices.com/minecraft/profile/skins";
-    private static final String ONLINE_URL = "https://api.slothpixel.me/api/players/";
 
     private APIUtils() {}
 
@@ -88,18 +87,6 @@ public final class APIUtils {
             Minecraft mc = Minecraft.getMinecraft();
             return profile.getUsername().equals(mc.getSession().getUsername())
                     && profile.getUuid().equals(mc.getSession().getPlayerID());
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    public static boolean checkOnline(String username) {
-        try (CloseableHttpClient client = HttpClients.createDefault()) {
-            HttpGet request = new HttpGet(ONLINE_URL + username);
-            try (CloseableHttpResponse response = client.execute(request)) {
-                JsonObject json = new JsonParser().parse(EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8)).getAsJsonObject();
-                return json.has("online") && json.get("online").getAsBoolean();
-            }
         } catch (Exception e) {
             return false;
         }
