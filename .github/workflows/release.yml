@@ -31,7 +31,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          VERSION=$(grep '^version' build.gradle | head -1 | sed 's/version = "//;s/"//')
+          VERSION=$(grep '^version' build.gradle | head -1 | sed 's/version = "//;s/"//;s/\r//')
           SHA=$(git rev-parse --short HEAD)
           TAG="v${VERSION}-${SHA}"
           git tag "$TAG"
