@@ -35,11 +35,11 @@ configurations {
 }
 
 repositories {
-    mavenCentral()
+
 }
 
 dependencies {
-    shade "org.xerial:sqlite-jdbc:3.36.0.3"
+
 }
 
 processResources {

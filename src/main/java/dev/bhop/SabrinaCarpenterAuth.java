@@ -23,21 +23,25 @@ public class SabrinaCarpenterAuth {
 
     public static final String MODID = "sabrinacarpenterauth";
     public static final String VERSION = "1.0";
-    public static final Minecraft mc = Minecraft.getMinecraft();
-    public static Session originalSession = mc.getSession();
+    public static Session originalSession;
     public static AccountDatabase database;
     public static String sessionValidity = "\u00a72\u2714 Valid";
 
     private static File modDirectory;
 
+    private static Minecraft mc() {
+        return Minecraft.getMinecraft();
+    }
+
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         MinecraftForge.EVENT_BUS.register(this);
         Display.setTitle("SabrinaCarpenterAuth " + VERSION);
+        originalSession = mc().getSession();
         try {
-            modDirectory = new File(mc.mcDataDir, MODID);
+            modDirectory = new File(mc().mcDataDir, MODID);
             modDirectory.mkdirs();
-            database = new AccountDatabase(new File(modDirectory, "accounts.db"));
+            database = new AccountDatabase(new File(modDirectory, "accounts.json"));
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize database", e);
         }
@@ -54,7 +58,7 @@ public class SabrinaCarpenterAuth {
         e.buttonList.add(new GuiButton(2200, e.gui.width - 180, 5, 80, 20, "Accounts"));
         new Thread(() -> {
             try {
-                sessionValidity = APIUtils.validateSession(mc.getSession().getToken())
+                sessionValidity = APIUtils.validateSession(mc().getSession().getToken())
                         ? "\u00a72\u2714 Valid" : "\u00a74\u2573 Invalid";
             } catch (Exception ignored) {}
         }).start();
@@ -63,6 +67,7 @@ public class SabrinaCarpenterAuth {
     @SubscribeEvent
     public void onDrawScreen(GuiScreenEvent.DrawScreenEvent.Post e) {
         if (!(e.gui instanceof GuiMultiplayer)) return;
+        Minecraft mc = mc();
         String info = "\u00a7fUser: " + mc.getSession().getUsername() + "  \u00a7f|  " + sessionValidity;
         mc.fontRendererObj.drawString(info, 5, 10, Color.RED.getRGB());
     }
@@ -70,6 +75,7 @@ public class SabrinaCarpenterAuth {
     @SubscribeEvent
     public void onActionPerformed(GuiScreenEvent.ActionPerformedEvent.Pre e) {
         if (!(e.gui instanceof GuiMultiplayer)) return;
+        Minecraft mc = mc();
         if (e.button.id == 2100) mc.displayGuiScreen(new SessionGUI(e.gui));
         if (e.button.id == 2200) mc.displayGuiScreen(new AccountListGUI(e.gui));
     }
