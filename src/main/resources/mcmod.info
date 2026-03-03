@@ -1,0 +1,15 @@
+[
+{
+  "modid": "sabrinacarpenterauth",
+  "name": "SabrinaCarpenterAuth",
+  "description": "Session authentication mod",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "https://github.com/prettylittlelies",
+  "authorList": ["bhop"],
+  "credits": "",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]

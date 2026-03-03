@@ -1,0 +1,22 @@
+# Build output
+build/
+out/
+
+# Gradle
+.gradle/
+local.properties
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# ForgeGradle cache
+run/
+fg_cache/
+
+# OS
+.DS_Store
+Thumbs.db
