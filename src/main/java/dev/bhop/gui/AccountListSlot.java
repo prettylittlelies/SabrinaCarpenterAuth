@@ -58,11 +58,13 @@ public class AccountListSlot extends GuiSlot {
         Account account = accounts.get(index);
         Minecraft mc = Minecraft.getMinecraft();
 
-        ResourceLocation head = TextureCache.get(TextureCache.headUrl(account.getUuid()));
+        String headUrl = TextureCache.headUrl(account.getUuid());
+        ResourceLocation head = TextureCache.get(headUrl);
         if (head != null) {
             mc.getTextureManager().bindTexture(head);
             Gui.drawModalRectWithCustomSizedTexture(x, y + 1, 0, 0, 20, 20, 20, 20);
         } else {
+            TextureCache.loadAsync(headUrl);
             Gui.drawRect(x, y + 1, x + 20, y + 21, 0xFF333333);
         }
 

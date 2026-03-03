@@ -31,7 +31,7 @@ grab the jar from [releases](https://github.com/prettylittlelies/SabrinaCarpente
 ### build from source
 
 ```
-./gradlew shadowJar
+./gradlew build
 ```
 
 jar goes to `build/libs/`

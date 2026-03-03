@@ -85,23 +85,22 @@ public class AccountListGUI extends GuiScreen {
             accountSlot.setAccounts(accounts);
             if (selectedIndex >= accounts.size()) selectedIndex = accounts.size() - 1;
             Account selected = getSelectedAccount();
-            if (selected != null) {
-                TextureCache.loadAsync(TextureCache.bodyUrl(selected.getUuid()));
-                TextureCache.loadAsync(TextureCache.capeUrl(selected.getUuid()));
-            }
+            if (selected != null) preloadTextures(selected);
         } catch (Exception e) {
             setStatus("\u00a74Failed to load accounts");
         }
+    }
+
+    private void preloadTextures(Account account) {
+        TextureCache.loadAsync(TextureCache.bodyUrl(account.getUuid()));
+        TextureCache.loadAsync(TextureCache.capeUrl(account.getUuid()));
     }
 
     public void onAccountSelected(int index) {
         selectedIndex = index;
         updateDetailButtons();
         Account account = getSelectedAccount();
-        if (account != null) {
-            TextureCache.loadAsync(TextureCache.bodyUrl(account.getUuid()));
-            TextureCache.loadAsync(TextureCache.capeUrl(account.getUuid()));
-        }
+        if (account != null) preloadTextures(account);
     }
 
     public void onAccountDoubleClicked(int index) {
@@ -159,25 +158,28 @@ public class AccountListGUI extends GuiScreen {
 
         Gui.drawRect(width / 2 + 2, 32, width - 2, height - 48, 0x40000000);
 
+        int bodyW = 55;
+        int bodyH = 125;
         ResourceLocation body = TextureCache.get(TextureCache.bodyUrl(account.getUuid()));
-        int bodyDisplayW = 50;
-        int bodyDisplayH = 110;
         if (body != null) {
             mc.getTextureManager().bindTexture(body);
-            Gui.drawModalRectWithCustomSizedTexture(px, py, 0, 0, bodyDisplayW, bodyDisplayH, bodyDisplayW, bodyDisplayH);
+            Gui.drawModalRectWithCustomSizedTexture(px, py, 0, 0, bodyW, bodyH, bodyW, bodyH);
         } else {
-            Gui.drawRect(px, py, px + bodyDisplayW, py + bodyDisplayH, 0xFF1A1A1A);
-            mc.fontRendererObj.drawString("\u00a78...", px + 18, py + 50, 0x888888);
+            Gui.drawRect(px, py, px + bodyW, py + bodyH, 0xFF1A1A1A);
+            mc.fontRendererObj.drawString("\u00a78...", px + 20, py + 56, 0x888888);
+            TextureCache.loadAsync(TextureCache.bodyUrl(account.getUuid()));
         }
 
+        int capeX = px + bodyW + 8;
+        int capeW = 32;
+        int capeH = 50;
         ResourceLocation cape = TextureCache.get(TextureCache.capeUrl(account.getUuid()));
-        int capeX = px + bodyDisplayW + 8;
         if (cape != null) {
             mc.getTextureManager().bindTexture(cape);
-            Gui.drawModalRectWithCustomSizedTexture(capeX, py, 0, 0, 40, 64, 40, 64);
+            Gui.drawModalRectWithCustomSizedTexture(capeX, py, 0, 0, capeW, capeH, capeW, capeH);
         }
 
-        int tx = px + bodyDisplayW + 55;
+        int tx = px + bodyW + capeW + 20;
         int ty = py;
         int lineH = 11;
 

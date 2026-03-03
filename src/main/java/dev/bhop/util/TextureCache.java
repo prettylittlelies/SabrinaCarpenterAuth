@@ -17,6 +17,8 @@ public final class TextureCache {
     private static final Map<String, ResourceLocation> TEXTURES = new ConcurrentHashMap<>();
     private static final Map<String, int[]> DIMENSIONS = new ConcurrentHashMap<>();
     private static final Set<String> PENDING = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+    private static final Map<String, Long> FAILED = new ConcurrentHashMap<>();
+    private static final long RETRY_DELAY = 10000L;
 
     private TextureCache() {}
 
@@ -33,14 +35,22 @@ public final class TextureCache {
     }
 
     public static void loadAsync(String url) {
+        if (url == null || url.isEmpty()) return;
         if (TEXTURES.containsKey(url) || !PENDING.add(url)) return;
+        Long failedAt = FAILED.get(url);
+        if (failedAt != null && System.currentTimeMillis() - failedAt < RETRY_DELAY) {
+            PENDING.remove(url);
+            return;
+        }
         new Thread(() -> {
             try {
                 BufferedImage image = ImageIO.read(new URL(url));
                 if (image == null) {
+                    FAILED.put(url, System.currentTimeMillis());
                     PENDING.remove(url);
                     return;
                 }
+                FAILED.remove(url);
                 DIMENSIONS.put(url, new int[]{image.getWidth(), image.getHeight()});
                 Minecraft.getMinecraft().addScheduledTask(() -> {
                     DynamicTexture texture = new DynamicTexture(image);
@@ -50,17 +60,18 @@ public final class TextureCache {
                     PENDING.remove(url);
                 });
             } catch (Exception e) {
+                FAILED.put(url, System.currentTimeMillis());
                 PENDING.remove(url);
             }
         }).start();
     }
 
     public static String headUrl(String uuid) {
-        return "https://mc-heads.net/avatar/" + uuid + "/20";
+        return "https://crafthead.net/helm/" + uuid + "/20";
     }
 
     public static String bodyUrl(String uuid) {
-        return "https://mc-heads.net/body/" + uuid;
+        return "https://crafthead.net/body/" + uuid;
     }
 
     public static String capeUrl(String uuid) {
