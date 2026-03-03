@@ -92,12 +92,12 @@ public final class APIUtils {
         }
     }
 
-    public static int changeSkin(String url, String token) throws IOException {
+    public static int changeSkin(String url, String token, SkinVariant variant) throws IOException {
         try (CloseableHttpClient client = HttpClients.createDefault()) {
             HttpPost request = new HttpPost(SKIN_URL);
             request.setHeader("Authorization", "Bearer " + token);
             request.setHeader("Content-Type", "application/json");
-            request.setEntity(new StringEntity("{\"variant\":\"classic\",\"url\":\"" + url + "\"}"));
+            request.setEntity(new StringEntity("{\"variant\":\"" + variant.name().toLowerCase() + "\",\"url\":\"" + url + "\"}"));
             try (CloseableHttpResponse response = client.execute(request)) {
                 return response.getStatusLine().getStatusCode();
             }

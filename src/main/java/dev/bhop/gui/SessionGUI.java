@@ -6,18 +6,16 @@ import dev.bhop.util.APIUtils;
 import dev.bhop.util.SessionChanger;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.util.Session;
 import org.lwjgl.input.Keyboard;
 
-import java.awt.*;
 import java.io.IOException;
 
 public class SessionGUI extends GuiScreen {
 
     private final GuiScreen parent;
-    private GuiTextField tokenField;
+    private GlassTextField tokenField;
     private ScaledResolution sr;
     private String status = "Enter Session Token";
 
@@ -32,13 +30,13 @@ public class SessionGUI extends GuiScreen {
         int cx = sr.getScaledWidth() / 2;
         int cy = sr.getScaledHeight() / 2;
 
-        tokenField = new GuiTextField(1, mc.fontRendererObj, cx - 100, cy, 200, 20);
+        tokenField = new GlassTextField(1, mc.fontRendererObj, cx - 100, cy, 200, 20);
         tokenField.setMaxStringLength(32767);
         tokenField.setFocused(true);
 
-        buttonList.add(new GuiButton(1400, cx - 100, cy + 25, 97, 20, "Login"));
-        buttonList.add(new GuiButton(1500, cx + 3, cy + 25, 97, 20, "Restore"));
-        buttonList.add(new GuiButton(1600, cx - 100, cy + 50, 200, 20, "Back"));
+        buttonList.add(new GlassButton(1400, cx - 100, cy + 25, 97, 20, "Login"));
+        buttonList.add(new GlassButton(1500, cx + 3, cy + 25, 97, 20, "Restore"));
+        buttonList.add(new GlassButton(1600, cx - 100, cy + 50, 200, 20, "Back"));
     }
 
     @Override
@@ -47,11 +45,25 @@ public class SessionGUI extends GuiScreen {
     }
 
     @Override
+    public void updateScreen() {
+        tokenField.updateCursorCounter();
+    }
+
+    @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         drawDefaultBackground();
-        mc.fontRendererObj.drawString(status, sr.getScaledWidth() / 2 - mc.fontRendererObj.getStringWidth(status) / 2, sr.getScaledHeight() / 2 - 30, Color.WHITE.getRGB());
+        int cx = sr.getScaledWidth() / 2;
+        int cy = sr.getScaledHeight() / 2;
+        RenderUtils.drawGlassPanel(cx - 110, cy - 45, 220, 125, 8.0, 0x80101020, 0x40FFFFFF);
+        mc.fontRendererObj.drawStringWithShadow(status, cx - mc.fontRendererObj.getStringWidth(status) / 2, cy - 30, 0xFFFFFFFF);
         tokenField.drawTextBox();
         super.drawScreen(mouseX, mouseY, partialTicks);
+    }
+
+    @Override
+    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
+        super.mouseClicked(mouseX, mouseY, mouseButton);
+        tokenField.mouseClicked(mouseX, mouseY, mouseButton);
     }
 
     @Override

@@ -4,6 +4,8 @@ import dev.bhop.SabrinaCarpenterAuth;
 import dev.bhop.data.Account;
 import dev.bhop.data.AccountExporter;
 import dev.bhop.data.CapeInfo;
+import dev.bhop.data.SkinVariant;
+import dev.bhop.util.APIUtils;
 import dev.bhop.util.SessionChanger;
 import dev.bhop.util.TextureCache;
 import net.minecraft.client.gui.Gui;
@@ -19,6 +21,8 @@ import java.awt.datatransfer.StringSelection;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -32,6 +36,11 @@ public class AccountListGUI extends GuiScreen {
     private static final int BTN_EXPORT_ALL = 5006;
     private static final int BTN_BACK = 5007;
     private static final int BTN_COPY = 5008;
+    private static final int BTN_SORT = 5009;
+    private static final int BTN_RESTORE = 5010;
+    private static final int BTN_REFRESH = 5011;
+    private static final int BTN_SKIN_APPLY = 5012;
+    private static final int BTN_SKIN_VARIANT = 5013;
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
     private final GuiScreen parent;
@@ -40,11 +49,24 @@ public class AccountListGUI extends GuiScreen {
     private String statusMessage = "";
     private long statusExpiry;
 
-    private GuiButton loginBtn;
-    private GuiButton exportBtn;
-    private GuiButton deleteBtn;
-    private GuiButton folderBtn;
-    private GuiButton copyBtn;
+    private GlassTextField searchField;
+    private GlassButton sortButton;
+    private SortMode sortMode = SortMode.LAST_USED;
+    private List<Account> allAccounts = new ArrayList<>();
+    private List<Account> filteredAccounts = new ArrayList<>();
+
+    private GlassButton loginBtn;
+    private GlassButton exportBtn;
+    private GlassButton deleteBtn;
+    private GlassButton folderBtn;
+    private GlassButton copyBtn;
+    private GlassButton refreshBtn;
+    private GlassButton skinApplyBtn;
+    private GlassButton skinVariantBtn;
+    private GlassTextField skinUrlField;
+    private SkinVariant selectedVariant = SkinVariant.CLASSIC;
+    private boolean refreshing;
+    private boolean changingSkin;
 
     public AccountListGUI(GuiScreen parent) {
         this.parent = parent;
@@ -53,19 +75,27 @@ public class AccountListGUI extends GuiScreen {
     @Override
     public void initGui() {
         Keyboard.enableRepeatEvents(true);
-        accountSlot = new AccountListSlot(this, mc, width, height, 32, height - 48);
+
+        searchField = new GlassTextField(0, mc.fontRendererObj, 8, 6, width / 2 - 110, 16);
+        searchField.setMaxStringLength(64);
+
+        sortButton = new GlassButton(BTN_SORT, width / 2 - 95, 4, 90, 18, "Sort: " + sortMode.getDisplayName());
+        buttonList.add(sortButton);
+        buttonList.add(new GlassButton(BTN_RESTORE, width - 88, 4, 80, 18, "Restore"));
+
+        accountSlot = new AccountListSlot(this, mc, width, height, 28, height - 32);
         refreshAccounts();
 
-        int rpx = width / 2 + 10;
-        int btnY = height - 80;
-        int bw = 57;
-        int gap = 4;
+        int rpx = width / 2 + 8;
+        int btnY = height - 28;
+        int bw = 50;
+        int gap = 3;
 
-        loginBtn = new GuiButton(BTN_LOGIN, rpx, btnY, bw, 20, "Login");
-        exportBtn = new GuiButton(BTN_EXPORT, rpx + bw + gap, btnY, bw, 20, "Export");
-        copyBtn = new GuiButton(BTN_COPY, rpx + (bw + gap) * 2, btnY, bw, 20, "Copy");
-        deleteBtn = new GuiButton(BTN_DELETE, rpx, btnY + 24, bw, 20, "\u00a7cDelete");
-        folderBtn = new GuiButton(BTN_FOLDER, rpx + bw + gap, btnY + 24, bw * 2 + gap, 20, "Open Folder");
+        loginBtn = new GlassButton(BTN_LOGIN, rpx, btnY, bw, 18, "Login");
+        exportBtn = new GlassButton(BTN_EXPORT, rpx + (bw + gap), btnY, bw, 18, "Export");
+        copyBtn = new GlassButton(BTN_COPY, rpx + (bw + gap) * 2, btnY, bw, 18, "Copy");
+        deleteBtn = GlassButton.danger(BTN_DELETE, rpx + (bw + gap) * 3, btnY, bw, 18, "Delete");
+        folderBtn = new GlassButton(BTN_FOLDER, rpx + (bw + gap) * 4, btnY, bw, 18, "Folder");
 
         buttonList.add(loginBtn);
         buttonList.add(exportBtn);
@@ -73,10 +103,21 @@ public class AccountListGUI extends GuiScreen {
         buttonList.add(deleteBtn);
         buttonList.add(folderBtn);
 
-        int bottomY = height - 28;
-        buttonList.add(new GuiButton(BTN_ADD, 5, bottomY, 90, 20, "Add Account"));
-        buttonList.add(new GuiButton(BTN_EXPORT_ALL, 100, bottomY, 90, 20, "Export All"));
-        buttonList.add(new GuiButton(BTN_BACK, width / 2 - 45, bottomY, 90, 20, "Back"));
+        buttonList.add(new GlassButton(BTN_ADD, 5, btnY, 70, 18, "Add"));
+        buttonList.add(new GlassButton(BTN_EXPORT_ALL, 80, btnY, 70, 18, "Export All"));
+        buttonList.add(new GlassButton(BTN_BACK, 155, btnY, 55, 18, "Back"));
+
+        refreshBtn = new GlassButton(BTN_REFRESH, width - 78, height - 95, 70, 16, "Refresh");
+        buttonList.add(refreshBtn);
+
+        int skinY = height - 70;
+        skinUrlField = new GlassTextField(1, mc.fontRendererObj, width / 2 + 10, skinY, width / 2 - 130, 16);
+        skinUrlField.setMaxStringLength(512);
+
+        skinVariantBtn = new GlassButton(BTN_SKIN_VARIANT, width - 112, skinY - 1, 46, 18, selectedVariant.name());
+        skinApplyBtn = new GlassButton(BTN_SKIN_APPLY, width - 62, skinY - 1, 52, 18, "Apply");
+        buttonList.add(skinVariantBtn);
+        buttonList.add(skinApplyBtn);
 
         updateDetailButtons();
     }
@@ -86,16 +127,35 @@ public class AccountListGUI extends GuiScreen {
         Keyboard.enableRepeatEvents(false);
     }
 
+    @Override
+    public void updateScreen() {
+        searchField.updateCursorCounter();
+        skinUrlField.updateCursorCounter();
+    }
+
     private void refreshAccounts() {
         try {
-            List<Account> accounts = SabrinaCarpenterAuth.database.getAll();
-            accountSlot.setAccounts(accounts);
-            if (selectedIndex >= accounts.size()) selectedIndex = accounts.size() - 1;
+            allAccounts = SabrinaCarpenterAuth.database.getAll();
+            applyFilter();
             Account selected = getSelectedAccount();
             if (selected != null) preloadTextures(selected);
         } catch (Exception e) {
             setStatus("\u00a74Failed to load accounts");
         }
+    }
+
+    private void applyFilter() {
+        String query = searchField.getText().trim().toLowerCase();
+        filteredAccounts.clear();
+        for (Account a : allAccounts) {
+            if (query.isEmpty() || a.getUsername().toLowerCase().contains(query)) {
+                filteredAccounts.add(a);
+            }
+        }
+        Collections.sort(filteredAccounts, sortMode.getComparator());
+        accountSlot.setAccounts(filteredAccounts);
+        if (selectedIndex >= filteredAccounts.size()) selectedIndex = filteredAccounts.size() - 1;
+        updateDetailButtons();
     }
 
     private void preloadTextures(Account account) {
@@ -107,7 +167,11 @@ public class AccountListGUI extends GuiScreen {
         selectedIndex = index;
         updateDetailButtons();
         Account account = getSelectedAccount();
-        if (account != null) preloadTextures(account);
+        if (account != null) {
+            preloadTextures(account);
+            selectedVariant = account.getSkinVariant();
+            skinVariantBtn.displayString = selectedVariant.name();
+        }
     }
 
     public void onAccountDoubleClicked(int index) {
@@ -124,12 +188,15 @@ public class AccountListGUI extends GuiScreen {
     }
 
     private void updateDetailButtons() {
-        boolean hasSelection = getSelectedAccount() != null;
-        loginBtn.visible = hasSelection;
-        exportBtn.visible = hasSelection;
-        copyBtn.visible = hasSelection;
-        deleteBtn.visible = hasSelection;
-        folderBtn.visible = hasSelection;
+        boolean has = getSelectedAccount() != null;
+        loginBtn.visible = has;
+        exportBtn.visible = has;
+        copyBtn.visible = has;
+        deleteBtn.visible = has;
+        folderBtn.visible = has;
+        refreshBtn.visible = has;
+        skinApplyBtn.visible = has;
+        skinVariantBtn.visible = has;
     }
 
     @Override
@@ -139,79 +206,97 @@ public class AccountListGUI extends GuiScreen {
     }
 
     @Override
+    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
+        super.mouseClicked(mouseX, mouseY, mouseButton);
+        searchField.mouseClicked(mouseX, mouseY, mouseButton);
+        if (getSelectedAccount() != null) {
+            skinUrlField.mouseClicked(mouseX, mouseY, mouseButton);
+        }
+    }
+
+    @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         drawDefaultBackground();
+
+        RenderUtils.drawGlassPanel(2, 1, width - 4, 24, 6.0, 0x80101020, 0x30FFFFFF);
+
         accountSlot.drawScreen(mouseX, mouseY, partialTicks);
 
-        drawCenteredString(mc.fontRendererObj, "\u00a7fSabrinaCarpenterAuth \u00a77- Accounts (" + accountSlot.getAccounts().size() + ")", width / 4, 14, 0xFFFFFF);
+        searchField.drawTextBox();
 
-        if (accountSlot.getAccounts().isEmpty()) {
-            drawCenteredString(mc.fontRendererObj, "\u00a78No accounts saved", width / 4, height / 2 - 4, 0x888888);
-            drawCenteredString(mc.fontRendererObj, "\u00a78Use 'Add Account' to get started", width / 4, height / 2 + 10, 0x888888);
-        }
+        String countText = "\u00a78" + filteredAccounts.size() + "/" + allAccounts.size();
+        mc.fontRendererObj.drawStringWithShadow(countText, width / 2 - 100 - mc.fontRendererObj.getStringWidth(countText), 9, 0x888888);
 
         Account selected = getSelectedAccount();
         if (selected != null) drawDetailPanel(selected);
 
+        if (accountSlot.getAccounts().isEmpty()) {
+            drawCenteredString(mc.fontRendererObj, "\u00a78No accounts found", width / 4, height / 2, 0x888888);
+        }
+
         if (System.currentTimeMillis() < statusExpiry) {
-            drawCenteredString(mc.fontRendererObj, statusMessage, width / 2, 3, 0xFFFFFF);
+            int sw = mc.fontRendererObj.getStringWidth(statusMessage) + 16;
+            RenderUtils.drawRoundedRect(width / 2 - sw / 2, height - 50, sw, 14, 4.0, 0xC0101020);
+            drawCenteredString(mc.fontRendererObj, statusMessage, width / 2, height - 48, 0xFFFFFF);
         }
 
         super.drawScreen(mouseX, mouseY, partialTicks);
     }
 
     private void drawDetailPanel(Account account) {
-        int px = width / 2 + 10;
-        int py = 36;
+        int px = width / 2 + 4;
+        int py = 30;
+        int pw = width / 2 - 8;
+        int ph = height - 64;
 
-        Gui.drawRect(width / 2 + 2, 32, width - 2, height - 48, 0x40000000);
+        RenderUtils.drawGlassPanel(px, py, pw, ph, 6.0, 0x80101020, 0x30FFFFFF);
 
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
         GlStateManager.enableAlpha();
         GlStateManager.enableBlend();
 
+        int bodyX = px + 8;
+        int bodyY = py + 8;
         int bodyW = 55;
         int bodyH = 125;
         ResourceLocation body = TextureCache.get(TextureCache.bodyUrl(account.getUuid()));
         if (body != null) {
             mc.getTextureManager().bindTexture(body);
-            Gui.drawModalRectWithCustomSizedTexture(px, py, 0, 0, bodyW, bodyH, bodyW, bodyH);
+            Gui.drawModalRectWithCustomSizedTexture(bodyX, bodyY, 0, 0, bodyW, bodyH, bodyW, bodyH);
         } else {
-            Gui.drawRect(px, py, px + bodyW, py + bodyH, 0xFF2A2A2A);
-            mc.fontRendererObj.drawString("\u00a78...", px + 20, py + 56, 0x888888);
+            RenderUtils.drawRoundedRect(bodyX, bodyY, bodyW, bodyH, 4.0, 0xFF1A1A1A);
+            mc.fontRendererObj.drawString("\u00a78...", bodyX + 20, bodyY + 56, 0x888888);
             TextureCache.loadAsync(TextureCache.bodyUrl(account.getUuid()));
         }
 
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 
-        int capeX = px + bodyW + 8;
+        int capeX = bodyX + bodyW + 6;
         int capeW = 32;
         int capeH = 50;
         ResourceLocation cape = TextureCache.get(TextureCache.capeUrl(account.getUuid()));
         if (cape != null) {
             mc.getTextureManager().bindTexture(cape);
-            Gui.drawModalRectWithCustomSizedTexture(capeX, py, 0, 0, capeW, capeH, capeW, capeH);
+            Gui.drawModalRectWithCustomSizedTexture(capeX, bodyY, 0, 0, capeW, capeH, capeW, capeH);
         }
 
-        int tx = px + bodyW + capeW + 20;
-        int ty = py;
+        int tx = bodyX + bodyW + capeW + 14;
+        int ty = bodyY;
         int lineH = 11;
 
         mc.fontRendererObj.drawStringWithShadow("\u00a7f" + account.getUsername(), tx, ty, 0xFFFFFF);
         ty += lineH;
-
         mc.fontRendererObj.drawStringWithShadow("\u00a78" + account.getFormattedUuid(), tx, ty, 0x888888);
         ty += lineH + 4;
-
         mc.fontRendererObj.drawStringWithShadow("\u00a77Variant: \u00a7f" + account.getSkinVariant().name(), tx, ty, 0xFFFFFF);
         ty += lineH;
 
         if (!account.getCapes().isEmpty()) {
             mc.fontRendererObj.drawStringWithShadow("\u00a77Capes:", tx, ty, 0xFFFFFF);
             ty += lineH;
-            for (CapeInfo cape2 : account.getCapes()) {
-                String stateColor = cape2.getState().name().equals("ACTIVE") ? "\u00a7a" : "\u00a78";
-                mc.fontRendererObj.drawStringWithShadow("  " + stateColor + cape2.getAlias(), tx, ty, 0xFFFFFF);
+            for (CapeInfo c : account.getCapes()) {
+                String color = c.getState().name().equals("ACTIVE") ? "\u00a7a" : "\u00a78";
+                mc.fontRendererObj.drawStringWithShadow("  " + color + c.getAlias(), tx, ty, 0xFFFFFF);
                 ty += lineH - 1;
             }
         } else {
@@ -223,6 +308,10 @@ public class AccountListGUI extends GuiScreen {
         mc.fontRendererObj.drawStringWithShadow("\u00a78Added: " + DATE_FORMAT.format(new Date(account.getAddedAt())), tx, ty, 0x888888);
         ty += lineH;
         mc.fontRendererObj.drawStringWithShadow("\u00a78Last used: " + DATE_FORMAT.format(new Date(account.getLastUsedAt())), tx, ty, 0x888888);
+
+        int skinLabelY = height - 78;
+        mc.fontRendererObj.drawStringWithShadow("\u00a78Skin URL:", px + 10, skinLabelY, 0x888888);
+        skinUrlField.drawTextBox();
     }
 
     @Override
@@ -253,6 +342,25 @@ public class AccountListGUI extends GuiScreen {
             case BTN_BACK:
                 mc.displayGuiScreen(parent);
                 break;
+            case BTN_SORT:
+                sortMode = sortMode.next();
+                sortButton.displayString = "Sort: " + sortMode.getDisplayName();
+                applyFilter();
+                break;
+            case BTN_RESTORE:
+                SessionChanger.setSession(SabrinaCarpenterAuth.originalSession);
+                setStatus("\u00a72Restored original session");
+                break;
+            case BTN_REFRESH:
+                if (selected != null && !refreshing) refreshProfile(selected);
+                break;
+            case BTN_SKIN_VARIANT:
+                selectedVariant = selectedVariant == SkinVariant.CLASSIC ? SkinVariant.SLIM : SkinVariant.CLASSIC;
+                skinVariantBtn.displayString = selectedVariant.name();
+                break;
+            case BTN_SKIN_APPLY:
+                if (selected != null && !changingSkin) applySkin(selected);
+                break;
         }
     }
 
@@ -265,6 +373,70 @@ public class AccountListGUI extends GuiScreen {
                 mc.addScheduledTask(this::refreshAccounts);
             } catch (Exception e) {
                 setStatus("\u00a74Login failed");
+            }
+        }).start();
+    }
+
+    private void refreshProfile(Account account) {
+        refreshing = true;
+        refreshBtn.displayString = "...";
+        refreshBtn.enabled = false;
+        new Thread(() -> {
+            try {
+                Account fresh = APIUtils.fetchFullProfile(account.getAccessToken());
+                Account updated = new Account(fresh.getUuid(), fresh.getUsername(), account.getAccessToken(),
+                        fresh.getSkinUrl(), fresh.getSkinTextureKey(), fresh.getSkinVariant(),
+                        fresh.getCapes(), account.getAddedAt(), account.getLastUsedAt());
+                SabrinaCarpenterAuth.database.upsert(updated);
+                TextureCache.evictForUuid(account.getUuid());
+                mc.addScheduledTask(() -> {
+                    refreshAccounts();
+                    setStatus("\u00a72Refreshed " + updated.getUsername());
+                    refreshBtn.displayString = "Refresh";
+                    refreshBtn.enabled = true;
+                    refreshing = false;
+                });
+            } catch (Exception e) {
+                mc.addScheduledTask(() -> {
+                    setStatus("\u00a74Refresh failed");
+                    refreshBtn.displayString = "Refresh";
+                    refreshBtn.enabled = true;
+                    refreshing = false;
+                });
+            }
+        }).start();
+    }
+
+    private void applySkin(Account account) {
+        String url = skinUrlField.getText().trim();
+        if (url.isEmpty()) {
+            setStatus("\u00a74Enter a skin URL");
+            return;
+        }
+        changingSkin = true;
+        skinApplyBtn.displayString = "...";
+        skinApplyBtn.enabled = false;
+        new Thread(() -> {
+            try {
+                int code = APIUtils.changeSkin(url, account.getAccessToken(), selectedVariant);
+                mc.addScheduledTask(() -> {
+                    if (code == 200) {
+                        setStatus("\u00a72Skin changed");
+                        refreshProfile(account);
+                    } else {
+                        setStatus("\u00a74Skin change failed (HTTP " + code + ")");
+                    }
+                    skinApplyBtn.displayString = "Apply";
+                    skinApplyBtn.enabled = true;
+                    changingSkin = false;
+                });
+            } catch (Exception e) {
+                mc.addScheduledTask(() -> {
+                    setStatus("\u00a74Skin change failed");
+                    skinApplyBtn.displayString = "Apply";
+                    skinApplyBtn.enabled = true;
+                    changingSkin = false;
+                });
             }
         }).start();
     }
@@ -333,7 +505,19 @@ public class AccountListGUI extends GuiScreen {
 
     @Override
     protected void keyTyped(char typedChar, int keyCode) throws IOException {
-        if (keyCode == Keyboard.KEY_ESCAPE) mc.displayGuiScreen(parent);
-        else super.keyTyped(typedChar, keyCode);
+        if (keyCode == Keyboard.KEY_ESCAPE) {
+            mc.displayGuiScreen(parent);
+            return;
+        }
+        if (searchField.isFocused()) {
+            searchField.textboxKeyTyped(typedChar, keyCode);
+            applyFilter();
+            return;
+        }
+        if (skinUrlField.isFocused()) {
+            skinUrlField.textboxKeyTyped(typedChar, keyCode);
+            return;
+        }
+        super.keyTyped(typedChar, keyCode);
     }
 }

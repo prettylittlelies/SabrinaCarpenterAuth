@@ -5,6 +5,7 @@ import dev.bhop.util.TextureCache;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiSlot;
+import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
 
 import java.util.ArrayList;
@@ -58,20 +59,27 @@ public class AccountListSlot extends GuiSlot {
         Account account = accounts.get(index);
         Minecraft mc = Minecraft.getMinecraft();
 
+        if (parent.getSelectedIndex() == index) {
+            RenderUtils.drawRoundedRect(x - 2, y - 1, getListWidth() + 4, slotHeight + 2, 3.0, 0x60304060);
+        }
+
         String headUrl = TextureCache.headUrl(account.getUuid());
         ResourceLocation head = TextureCache.get(headUrl);
+        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
         if (head != null) {
             mc.getTextureManager().bindTexture(head);
             Gui.drawModalRectWithCustomSizedTexture(x, y + 1, 0, 0, 20, 20, 20, 20);
         } else {
             TextureCache.loadAsync(headUrl);
-            Gui.drawRect(x, y + 1, x + 20, y + 21, 0xFF333333);
+            RenderUtils.drawRoundedRect(x, y + 1, 20, 20, 3.0, 0xFF2A2A2A);
         }
 
         mc.fontRendererObj.drawStringWithShadow(account.getUsername(), x + 25, y + 3, 0xFFFFFF);
+        mc.fontRendererObj.drawStringWithShadow("\u00a77" + account.getSkinVariant().name(), x + 25, y + 14, 0x888888);
 
-        String variant = "\u00a77" + account.getSkinVariant().name();
-        mc.fontRendererObj.drawStringWithShadow(variant, x + 25, y + 14, 0x888888);
+        if (!account.getCapes().isEmpty()) {
+            RenderUtils.drawCircle(x + getListWidth() - 6, y + slotHeight / 2 + 1, 3, 0xFF4488FF);
+        }
     }
 
     @Override

@@ -66,6 +66,19 @@ public final class TextureCache {
         }).start();
     }
 
+    public static void evict(String url) {
+        TEXTURES.remove(url);
+        DIMENSIONS.remove(url);
+        FAILED.remove(url);
+        PENDING.remove(url);
+    }
+
+    public static void evictForUuid(String uuid) {
+        evict(headUrl(uuid));
+        evict(bodyUrl(uuid));
+        evict(capeUrl(uuid));
+    }
+
     public static String headUrl(String uuid) {
         return "https://crafthead.net/helm/" + uuid + "/20";
     }

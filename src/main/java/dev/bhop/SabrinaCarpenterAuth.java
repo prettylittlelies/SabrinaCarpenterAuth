@@ -2,8 +2,10 @@ package dev.bhop;
 
 import dev.bhop.data.AccountDatabase;
 import dev.bhop.gui.AccountListGUI;
+import dev.bhop.gui.GlassButton;
 import dev.bhop.gui.SessionGUI;
 import dev.bhop.util.APIUtils;
+import dev.bhop.util.SessionChanger;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiMultiplayer;
@@ -54,8 +56,9 @@ public class SabrinaCarpenterAuth {
     @SubscribeEvent
     public void onGuiInit(GuiScreenEvent.InitGuiEvent.Post e) {
         if (!(e.gui instanceof GuiMultiplayer)) return;
-        e.buttonList.add(new GuiButton(2100, e.gui.width - 90, 5, 80, 20, "Login"));
-        e.buttonList.add(new GuiButton(2200, e.gui.width - 180, 5, 80, 20, "Accounts"));
+        e.buttonList.add(new GlassButton(2100, e.gui.width - 90, 5, 80, 20, "Login"));
+        e.buttonList.add(new GlassButton(2200, e.gui.width - 180, 5, 80, 20, "Accounts"));
+        e.buttonList.add(new GlassButton(2300, e.gui.width - 270, 5, 80, 20, "Restore"));
         new Thread(() -> {
             try {
                 sessionValidity = APIUtils.validateSession(mc().getSession().getToken())
@@ -78,5 +81,9 @@ public class SabrinaCarpenterAuth {
         Minecraft mc = mc();
         if (e.button.id == 2100) mc.displayGuiScreen(new SessionGUI(e.gui));
         if (e.button.id == 2200) mc.displayGuiScreen(new AccountListGUI(e.gui));
+        if (e.button.id == 2300) {
+            SessionChanger.setSession(originalSession);
+            sessionValidity = "\u00a72\u2714 Valid";
+        }
     }
 }
