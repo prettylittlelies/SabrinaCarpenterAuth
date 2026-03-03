@@ -27,18 +27,15 @@ jobs:
           sed -i '/org.gradle.java.home/d' gradle.properties
           ./gradlew build
 
-      - name: Get version
-        id: version
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           VERSION=$(grep '^version' build.gradle | head -1 | sed 's/version = "//;s/"//')
           SHA=$(git rev-parse --short HEAD)
-          echo "tag=v${VERSION}-${SHA}" >> "$GITHUB_OUTPUT"
-          echo "name=SabrinaCarpenterAuth ${VERSION}" >> "$GITHUB_OUTPUT"
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: ${{ steps.version.outputs.name }}
-          files: build/libs/SabrinaCarpenterAuth-*.jar
-          generate_release_notes: true
+          TAG="v${VERSION}-${SHA}"
+          git tag "$TAG"
+          git push origin "$TAG"
+          gh release create "$TAG" build/libs/SabrinaCarpenterAuth-*.jar \
+            --title "SabrinaCarpenterAuth ${VERSION}" \
+            --generate-notes
