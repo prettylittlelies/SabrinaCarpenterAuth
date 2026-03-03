@@ -9,11 +9,13 @@ import dev.bhop.util.TextureCache;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Session;
 import org.lwjgl.input.Keyboard;
 
 import java.awt.*;
+import java.awt.datatransfer.StringSelection;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -29,6 +31,7 @@ public class AccountListGUI extends GuiScreen {
     private static final int BTN_ADD = 5005;
     private static final int BTN_EXPORT_ALL = 5006;
     private static final int BTN_BACK = 5007;
+    private static final int BTN_COPY = 5008;
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
     private final GuiScreen parent;
@@ -41,6 +44,7 @@ public class AccountListGUI extends GuiScreen {
     private GuiButton exportBtn;
     private GuiButton deleteBtn;
     private GuiButton folderBtn;
+    private GuiButton copyBtn;
 
     public AccountListGUI(GuiScreen parent) {
         this.parent = parent;
@@ -52,17 +56,20 @@ public class AccountListGUI extends GuiScreen {
         accountSlot = new AccountListSlot(this, mc, width, height, 32, height - 48);
         refreshAccounts();
 
-        int rightPanelX = width / 2 + 10;
+        int rpx = width / 2 + 10;
         int btnY = height - 80;
-        int halfBtn = 88;
+        int bw = 57;
+        int gap = 4;
 
-        loginBtn = new GuiButton(BTN_LOGIN, rightPanelX, btnY, halfBtn, 20, "Login");
-        exportBtn = new GuiButton(BTN_EXPORT, rightPanelX + halfBtn + 4, btnY, halfBtn, 20, "Export");
-        deleteBtn = new GuiButton(BTN_DELETE, rightPanelX, btnY + 24, halfBtn, 20, "\u00a7cDelete");
-        folderBtn = new GuiButton(BTN_FOLDER, rightPanelX + halfBtn + 4, btnY + 24, halfBtn, 20, "Open Folder");
+        loginBtn = new GuiButton(BTN_LOGIN, rpx, btnY, bw, 20, "Login");
+        exportBtn = new GuiButton(BTN_EXPORT, rpx + bw + gap, btnY, bw, 20, "Export");
+        copyBtn = new GuiButton(BTN_COPY, rpx + (bw + gap) * 2, btnY, bw, 20, "Copy");
+        deleteBtn = new GuiButton(BTN_DELETE, rpx, btnY + 24, bw, 20, "\u00a7cDelete");
+        folderBtn = new GuiButton(BTN_FOLDER, rpx + bw + gap, btnY + 24, bw * 2 + gap, 20, "Open Folder");
 
         buttonList.add(loginBtn);
         buttonList.add(exportBtn);
+        buttonList.add(copyBtn);
         buttonList.add(deleteBtn);
         buttonList.add(folderBtn);
 
@@ -120,6 +127,7 @@ public class AccountListGUI extends GuiScreen {
         boolean hasSelection = getSelectedAccount() != null;
         loginBtn.visible = hasSelection;
         exportBtn.visible = hasSelection;
+        copyBtn.visible = hasSelection;
         deleteBtn.visible = hasSelection;
         folderBtn.visible = hasSelection;
     }
@@ -158,6 +166,10 @@ public class AccountListGUI extends GuiScreen {
 
         Gui.drawRect(width / 2 + 2, 32, width - 2, height - 48, 0x40000000);
 
+        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+        GlStateManager.enableAlpha();
+        GlStateManager.enableBlend();
+
         int bodyW = 55;
         int bodyH = 125;
         ResourceLocation body = TextureCache.get(TextureCache.bodyUrl(account.getUuid()));
@@ -165,10 +177,12 @@ public class AccountListGUI extends GuiScreen {
             mc.getTextureManager().bindTexture(body);
             Gui.drawModalRectWithCustomSizedTexture(px, py, 0, 0, bodyW, bodyH, bodyW, bodyH);
         } else {
-            Gui.drawRect(px, py, px + bodyW, py + bodyH, 0xFF1A1A1A);
+            Gui.drawRect(px, py, px + bodyW, py + bodyH, 0xFF2A2A2A);
             mc.fontRendererObj.drawString("\u00a78...", px + 20, py + 56, 0x888888);
             TextureCache.loadAsync(TextureCache.bodyUrl(account.getUuid()));
         }
+
+        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 
         int capeX = px + bodyW + 8;
         int capeW = 32;
@@ -221,6 +235,9 @@ public class AccountListGUI extends GuiScreen {
             case BTN_EXPORT:
                 if (selected != null) exportAccount(selected);
                 break;
+            case BTN_COPY:
+                if (selected != null) copyToken(selected);
+                break;
             case BTN_DELETE:
                 if (selected != null) deleteAccount(selected);
                 break;
@@ -250,6 +267,16 @@ public class AccountListGUI extends GuiScreen {
                 setStatus("\u00a74Login failed");
             }
         }).start();
+    }
+
+    private void copyToken(Account account) {
+        try {
+            Toolkit.getDefaultToolkit().getSystemClipboard()
+                    .setContents(new StringSelection(account.getAccessToken()), null);
+            setStatus("\u00a72Token copied");
+        } catch (Exception e) {
+            setStatus("\u00a74Copy failed");
+        }
     }
 
     private void deleteAccount(Account account) {
